@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART ICT Photo Resizer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the Inter font, applied globally */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- React and ReactDOM CDNs -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX transformation in browser (for development, not recommended for production) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        // This is where your React App component code will go.
+        // It's directly embedded here for simplicity in this environment.
+        // In a real GitHub Pages setup, you would typically build your React app
+        // and include the compiled JavaScript bundle here (e.g., <script src="./build/static/js/main.js"></script>).
+
+        import React, { useState, useRef } from 'react';
+
+        // Main App component for the photo resizer
+        const App = () => {
+          // State to store the uploaded image file
+          const [selectedImage, setSelectedImage] = useState(null);
+          // State to store the data URL of the resized image
+          const [resizedImage, setResizedImage] = useState(null);
+          // State to manage loading status during image processing
+          const [loading, setLoading] = useState(false);
+          // State to store any error messages
+          const [error, setError] = useState('');
+
+          // Ref for the hidden canvas used for image processing
+          const canvasRef = useRef(null);
+          // Ref for the canvas where the resized image is displayed
+          const resizedCanvasRef = useRef(null);
+
+          // Constants for colors based on user's request
+          const primaryColor = '#0E8D45'; // Green
+          const secondaryColor = '#FF7F46'; // Orange
+          const textColor = 'black';
+          const backgroundColor = 'white';
+
+          /**
+           * Handles the image file selection from the input.
+           * Reads the file and triggers the image processing.
+           * @param {Object} event - The change event from the file input.
+           */
+          const handleImageUpload = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+              // Clear previous states
+              setError('');
+              setResizedImage(null); // Clear previous resized image
+              setSelectedImage(null); // Clear previous image preview
+
+              // Check if the file is an image
+              if (!file.type.startsWith('image/')) {
+                setError('Please upload an image file (e.g., JPG, PNG).');
+                return;
+              }
+
+              setLoading(true); // Start loading indicator
+
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                setSelectedImage(e.target.result); // Set the selected image for preview
+                processImage(e.target.result); // Process the image
+              };
+              reader.onerror = () => {
+                setError('Failed to read image file.');
+                setLoading(false);
+              };
+              reader.readAsDataURL(file); // Read the file as a data URL
+            }
+          };
+
+          /**
+           * Processes the uploaded image: loads it onto a canvas,
+           * resizes it to fit within 200x200px while maintaining aspect ratio,
+           * compresses it as JPEG, and displays the result.
+           * @param {string} imageDataUrl - The data URL of the uploaded image.
+           */
+          const processImage = (imageDataUrl) => {
+            const img = new Image();
+            img.onload = () => {
+              const targetSize = 200; // Target width and height for the container
+
+              let newWidth;
+              let newHeight;
+
+              // Calculate new dimensions to fit within targetSize x targetSize while maintaining aspect ratio
+              if (img.width > img.height) {
+                newWidth = targetSize;
+                newHeight = (img.height / img.width) * targetSize;
+              } else {
+                newHeight = targetSize;
+                newWidth = (img.width / img.height) * targetSize;
+              }
+
+              const resizedCanvas = resizedCanvasRef.current;
+              const resizedCtx = resizedCanvas.getContext('2d');
+
+              // Set resized canvas dimensions to the target size (200x200)
+              resizedCanvas.width = targetSize;
+              resizedCanvas.height = targetSize;
+
+              // Clear the canvas before drawing
+              resizedCtx.clearRect(0, 0, targetSize, targetSize);
+
+              // Calculate position to center the resized image on the 200x200 canvas
+              const destX = (targetSize - newWidth) / 2;
+              const destY = (targetSize - newHeight) / 2;
+
+              // Draw the original image onto the resized canvas with new dimensions
+              // This scales the image to fit while maintaining its aspect ratio
+              resizedCtx.drawImage(img, destX, destY, newWidth, newHeight);
+
+              // Get the data URL of the resized image as JPEG with 0.8 quality
+              const resizedDataUrl = resizedCanvas.toDataURL('image/jpeg', 0.8); // Changed to JPEG with quality
+              setResizedImage(resizedDataUrl);
+              setLoading(false); // End loading indicator
+            };
+            img.onerror = () => {
+              setError('Failed to load image for processing.');
+              setLoading(false);
+            };
+            img.src = imageDataUrl; // Set image source to trigger loading
+          };
+
+          /**
+           * Handles the download of the resized image.
+           * Creates a temporary link and triggers a download.
+           * @param {Object} event - The click event from the download button.
+           */
+          const handleDownload = () => {
+            if (resizedImage) {
+              const link = document.createElement('a');
+              link.href = resizedImage;
+              link.download = 'smart_ict_photo_resized.jpeg'; // Changed filename extension to .jpeg
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            } else {
+              setError('No resized image available to download.');
+            }
+          };
+
+          return (
+            <div
+              className="min-h-screen flex items-center justify-center p-4"
+              style={{ backgroundColor: backgroundColor, color: textColor, fontFamily: 'Inter, sans-serif' }}
+            >
+              <div
+                className="bg-white p-6 md:p-8 rounded-xl shadow-lg w-full max-w-md text-center"
+                style={{ borderColor: primaryColor, borderWidth: '2px' }}
+              >
+                {/* Page Title */}
+                <h1 className="text-3xl md:text-4xl font-bold mb-6" style={{ color: primaryColor }}>
+                  SMART ICT Photo Resizer
+                </h1>
+
+                {/* File Upload Section */}
+                <div className="mb-6">
+                  <label
+                    htmlFor="imageUpload"
+                    className="cursor-pointer inline-block px-6 py-3 rounded-full text-white font-semibold shadow-md transition-all duration-300 hover:shadow-lg hover:opacity-90"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    Upload Image
+                    <input
+                      id="imageUpload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
+                </div>
+
+                {/* Loading and Error Messages */}
+                {loading && (
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: primaryColor }}></div>
+                    <p className="ml-3 text-lg" style={{ color: primaryColor }}>Processing image...</p>
+                  </div>
+                )}
+                {error && (
+                  <p className="text-red-500 mb-4 font-medium">{error}</p>
+                )}
+
+                {/* Image Previews */}
+                <div className="flex flex-col md:flex-row justify-center items-center space-y-6 md:space-y-0 md:space-x-6 mb-6">
+                  {/* Original Image Preview */}
+                  {selectedImage && (
+                    <div className="flex flex-col items-center">
+                      <h2 className="text-xl font-semibold mb-2" style={{ color: textColor }}>Original Image</h2>
+                      <img
+                        src={selectedImage}
+                        alt="Original"
+                        className="max-w-full h-auto rounded-lg shadow-md"
+                        style={{ maxHeight: '250px', border: `2px solid ${secondaryColor}` }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Resized Image Preview */}
+                  {resizedImage && (
+                    <div className="flex flex-col items-center">
+                      <h2 className="text-xl font-semibold mb-2" style={{ color: textColor }}>Resized (200x200px container)</h2>
+                      <img
+                        src={resizedImage}
+                        alt="Resized"
+                        className="w-52 h-52 object-contain rounded-lg shadow-md"
+                        style={{ border: `2px solid ${primaryColor}` }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Download Button */}
+                {resizedImage && (
+                  <button
+                    onClick={handleDownload}
+                    className="px-8 py-3 rounded-full text-white font-semibold shadow-md transition-all duration-300 hover:shadow-lg hover:opacity-90"
+                    style={{ backgroundColor: secondaryColor }}
+                  >
+                    Download Resized Image
+                  </button>
+                )}
+
+                {/* Hidden canvases for processing */}
+                <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
+                <canvas ref={resizedCanvasRef} style={{ display: 'none' }}></canvas>
+              </div>
+            </div>
+          );
+        };
+
+        // Render the App component into the 'root' div
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
