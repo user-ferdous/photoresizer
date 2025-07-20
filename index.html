@@ -1,261 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMART ICT Photo Resizer</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts - Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Custom styles for the Inter font, applied globally */
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SMART ICT Photo Resizer</title>
+
+  <!-- Bootstrap CSS via CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Google Font (optional) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
 </head>
-<body>
-    <div id="root"></div>
+<body style="font-family: 'Inter', sans-serif;">
 
-    <!-- React and ReactDOM CDNs -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX transformation in browser (for development, not recommended for production) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <div class="container py-5">
+    <div class="card shadow p-4 mx-auto" style="max-width: 600px;">
+      <h1 class="text-center text-success mb-4">SMART ICT Photo Resizer</h1>
 
-    <script type="text/babel">
-        // This is where your React App component code will go.
-        // It's directly embedded here for simplicity in this environment.
-        // In a real GitHub Pages setup, you would typically build your React app
-        // and include the compiled JavaScript bundle here (e.g., <script src="./build/static/js/main.js"></script>).
+      <div class="mb-3 text-center">
+        <label for="imageUpload" class="btn btn-success">
+          Upload Image
+          <input type="file" id="imageUpload" accept="image/*" hidden />
+        </label>
+      </div>
 
-        // Removed the import statement as React and its hooks are globally available via CDNs
-        // import React, { useState, useRef } from 'react';
+      <div id="loadingSection" class="text-center mb-3 d-none">
+        <div class="spinner-border text-success" role="status"></div>
+        <p class="mt-2">Processing image...</p>
+      </div>
 
-        // Main App component for the photo resizer
-        const App = () => {
-          // Access useState and useRef directly from the global React object
-          const { useState, useRef } = React;
+      <div id="errorSection" class="alert alert-danger d-none"></div>
 
-          // State to store the uploaded image file
-          const [selectedImage, setSelectedImage] = useState(null);
-          // State to store the data URL of the resized image
-          const [resizedImage, setResizedImage] = useState(null);
-          // State to manage loading status during image processing
-          const [loading, setLoading] = useState(false);
-          // State to store any error messages
-          const [error, setError] = useState('');
+      <div class="row text-center mb-3">
+        <div id="originalContainer" class="col-md-6 d-none">
+          <h5>Original Image</h5>
+          <img id="originalImage" class="img-thumbnail" />
+        </div>
+        <div id="resizedContainer" class="col-md-6 d-none">
+          <h5>Resized Image (200x200)</h5>
+          <img id="resizedImage" class="img-thumbnail" />
+        </div>
+      </div>
 
-          // Ref for the hidden canvas used for image processing
-          const canvasRef = useRef(null);
-          // Ref for the canvas where the resized image is displayed
-          const resizedCanvasRef = useRef(null);
+      <div class="text-center d-none" id="downloadSection">
+        <button class="btn btn-warning" id="downloadBtn">Download Resized Image</button>
+      </div>
 
-          // Constants for colors based on user's request
-          const primaryColor = '#0E8D45'; // Green
-          const secondaryColor = '#FF7F46'; // Orange
-          const textColor = 'black';
-          const backgroundColor = 'white';
+      <canvas id="hiddenCanvas" style="display: none;"></canvas>
+      <canvas id="resizedCanvas" style="display: none;"></canvas>
+    </div>
+  </div>
 
-          /**
-           * Handles the image file selection from the input.
-           * Reads the file and triggers the image processing.
-           * @param {Object} event - The change event from the file input.
-           */
-          const handleImageUpload = (event) => {
-            const file = event.target.files[0];
-            if (file) {
-              // Clear previous states
-              setError('');
-              setResizedImage(null); // Clear previous resized image
-              setSelectedImage(null); // Clear previous image preview
+  <!-- JavaScript -->
+  <script>
+    const imageInput = document.getElementById('imageUpload');
+    const originalImage = document.getElementById('originalImage');
+    const resizedImage = document.getElementById('resizedImage');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resizedCanvas = document.getElementById('resizedCanvas');
+    const errorSection = document.getElementById('errorSection');
+    const loadingSection = document.getElementById('loadingSection');
+    const originalContainer = document.getElementById('originalContainer');
+    const resizedContainer = document.getElementById('resizedContainer');
+    const downloadSection = document.getElementById('downloadSection');
 
-              // Check if the file is an image
-              if (!file.type.startsWith('image/')) {
-                setError('Please upload an image file (e.g., JPG, PNG).');
-                return;
-              }
+    imageInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
 
-              setLoading(true); // Start loading indicator
+      errorSection.classList.add('d-none');
+      resizedContainer.classList.add('d-none');
+      originalContainer.classList.add('d-none');
+      downloadSection.classList.add('d-none');
 
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                setSelectedImage(e.target.result); // Set the selected image for preview
-                processImage(e.target.result); // Process the image
-              };
-              reader.onerror = () => {
-                setError('Failed to read image file.');
-                setLoading(false);
-              };
-              reader.readAsDataURL(file); // Read the file as a data URL
-            }
-          };
+      if (!file.type.startsWith('image/')) {
+        showError("Please upload an image file.");
+        return;
+      }
 
-          /**
-           * Processes the uploaded image: loads it onto a canvas,
-           * resizes it to fit within 200x200px while maintaining aspect ratio,
-           * compresses it as JPEG, and displays the result.
-           * @param {string} imageDataUrl - The data URL of the uploaded image.
-           */
-          const processImage = (imageDataUrl) => {
-            const img = new Image();
-            img.onload = () => {
-              const targetSize = 200; // Target width and height for the container
+      loadingSection.classList.remove('d-none');
 
-              let newWidth;
-              let newHeight;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target.result;
+        originalImage.src = imageData;
+        originalContainer.classList.remove('d-none');
+        processImage(imageData);
+      };
+      reader.onerror = () => {
+        showError("Failed to read the image.");
+        loadingSection.classList.add('d-none');
+      };
+      reader.readAsDataURL(file);
+    });
 
-              // Calculate new dimensions to fit within targetSize x targetSize while maintaining aspect ratio
-              if (img.width > img.height) {
-                newWidth = targetSize;
-                newHeight = (img.height / img.width) * targetSize;
-              } else {
-                newHeight = targetSize;
-                newWidth = (img.width / img.height) * targetSize;
-              }
+    function processImage(imageDataUrl) {
+      const img = new Image();
+      img.onload = () => {
+        const targetSize = 200;
+        let newWidth, newHeight;
 
-              const resizedCanvas = resizedCanvasRef.current;
-              const resizedCtx = resizedCanvas.getContext('2d');
+        if (img.width > img.height) {
+          newWidth = targetSize;
+          newHeight = (img.height / img.width) * targetSize;
+        } else {
+          newHeight = targetSize;
+          newWidth = (img.width / img.height) * targetSize;
+        }
 
-              // Set resized canvas dimensions to the target size (200x200)
-              resizedCanvas.width = targetSize;
-              resizedCanvas.height = targetSize;
+        const ctx = resizedCanvas.getContext('2d');
+        resizedCanvas.width = targetSize;
+        resizedCanvas.height = targetSize;
+        ctx.clearRect(0, 0, targetSize, targetSize);
 
-              // Clear the canvas before drawing
-              resizedCtx.clearRect(0, 0, targetSize, targetSize);
+        const destX = (targetSize - newWidth) / 2;
+        const destY = (targetSize - newHeight) / 2;
+        ctx.drawImage(img, destX, destY, newWidth, newHeight);
 
-              // Calculate position to center the resized image on the 200x200 canvas
-              const destX = (targetSize - newWidth) / 2;
-              const destY = (targetSize - newHeight) / 2;
+        const resizedDataUrl = resizedCanvas.toDataURL('image/jpeg', 0.8);
+        resizedImage.src = resizedDataUrl;
+        resizedContainer.classList.remove('d-none');
+        downloadSection.classList.remove('d-none');
 
-              // Draw the original image onto the resized canvas with new dimensions
-              // This scales the image to fit while maintaining its aspect ratio
-              resizedCtx.drawImage(img, destX, destY, newWidth, newHeight);
+        loadingSection.classList.add('d-none');
+      };
+      img.onerror = () => {
+        showError("Failed to load the image.");
+        loadingSection.classList.add('d-none');
+      };
+      img.src = imageDataUrl;
+    }
 
-              // Get the data URL of the resized image as JPEG with 0.8 quality
-              const resizedDataUrl = resizedCanvas.toDataURL('image/jpeg', 0.8); // Changed to JPEG with quality
-              setResizedImage(resizedDataUrl);
-              setLoading(false); // End loading indicator
-            };
-            img.onerror = () => {
-              setError('Failed to load image for processing.');
-              setLoading(false);
-            };
-            img.src = imageDataUrl; // Set image source to trigger loading
-          };
+    function showError(msg) {
+      errorSection.textContent = msg;
+      errorSection.classList.remove('d-none');
+    }
 
-          /**
-           * Handles the download of the resized image.
-           * Creates a temporary link and triggers a download.
-           * @param {Object} event - The click event from the download button.
-           */
-          const handleDownload = () => {
-            if (resizedImage) {
-              const link = document.createElement('a');
-              link.href = resizedImage;
-              link.download = 'smart_ict_photo_resized.jpeg'; // Changed filename extension to .jpeg
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            } else {
-              setError('No resized image available to download.');
-            }
-          };
-
-          return (
-            <div
-              className="min-h-screen flex items-center justify-center p-4"
-              style={{ backgroundColor: backgroundColor, color: textColor, fontFamily: 'Inter, sans-serif' }}
-            >
-              <div
-                className="bg-white p-6 md:p-8 rounded-xl shadow-lg w-full max-w-md text-center"
-                style={{ borderColor: primaryColor, borderWidth: '2px' }}
-              >
-                {/* Page Title */}
-                <h1 className="text-3xl md:text-4xl font-bold mb-6" style={{ color: primaryColor }}>
-                  SMART ICT Photo Resizer
-                </h1>
-
-                {/* File Upload Section */}
-                <div className="mb-6">
-                  <label
-                    htmlFor="imageUpload"
-                    className="cursor-pointer inline-block px-6 py-3 rounded-full text-white font-semibold shadow-md transition-all duration-300 hover:shadow-lg hover:opacity-90"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    Upload Image
-                    <input
-                      id="imageUpload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
-                  </label>
-                </div>
-
-                {/* Loading and Error Messages */}
-                {loading && (
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: primaryColor }}></div>
-                    <p className="ml-3 text-lg" style={{ color: primaryColor }}>Processing image...</p>
-                  </div>
-                )}
-                {error && (
-                  <p className="text-red-500 mb-4 font-medium">{error}</p>
-                )}
-
-                {/* Image Previews */}
-                <div className="flex flex-col md:flex-row justify-center items-center space-y-6 md:space-y-0 md:space-x-6 mb-6">
-                  {/* Original Image Preview */}
-                  {selectedImage && (
-                    <div className="flex flex-col items-center">
-                      <h2 className="text-xl font-semibold mb-2" style={{ color: textColor }}>Original Image</h2>
-                      <img
-                        src={selectedImage}
-                        alt="Original"
-                        className="max-w-full h-auto rounded-lg shadow-md"
-                        style={{ maxHeight: '250px', border: `2px solid ${secondaryColor}` }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Resized Image Preview */}
-                  {resizedImage && (
-                    <div className="flex flex-col items-center">
-                      <h2 className="text-xl font-semibold mb-2" style={{ color: textColor }}>Resized (200x200px container)</h2>
-                      <img
-                        src={resizedImage}
-                        alt="Resized"
-                        className="w-52 h-52 object-contain rounded-lg shadow-md"
-                        style={{ border: `2px solid ${primaryColor}` }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Download Button */}
-                {resizedImage && (
-                  <button
-                    onClick={handleDownload}
-                    className="px-8 py-3 rounded-full text-white font-semibold shadow-md transition-all duration-300 hover:shadow-lg hover:opacity-90"
-                    style={{ backgroundColor: secondaryColor }}
-                  >
-                    Download Resized Image
-                  </button>
-                )}
-
-                {/* Hidden canvases for processing */}
-                <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
-                <canvas ref={resizedCanvasRef} style={{ display: 'none' }}></canvas>
-              </div>
-            </div>
-          );
-        };
-
-        // Render the App component into the 'root' div
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.href = resizedImage.src;
+      link.download = 'smart_ict_resized.jpeg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  </script>
 </body>
 </html>
