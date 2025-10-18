@@ -61,12 +61,6 @@
         border: 2px dashed #10b981;
         margin: 0 auto;
     }
-
-    /* Style for the emoji icons */
-    .control-emoji {
-        font-size: 24px; /* Ensure emojis are large enough to see */
-        line-height: 1;
-    }
   </style>
 </head>
 <body class="font-sans antialiased">
@@ -84,7 +78,7 @@
       <!-- End Updated Heading Structure -->
 
       <p class="text-center text-gray-500 mb-6">
-        নিচের ক্রপ বক্সটি টেনে সেট করুন। ক্রপ বক্সটি একটি স্থির **বর্গাকার (১:১)** অনুপাতে (২০০x২০০ পিক্সেল ছবির জন্য) লক করা আছে।
+        নিচের ক্রপ বক্সটি টেনে সেট করুন আপনার ছবির ফেইসের মধ্যে। ভাল ছবির জন্য আপনার আপনার ফেইসকে বক্সের মধ্যে রাখুন এবং আযাচিত অংশ রিমুভ করার জন্য জুম ইন-আউট অপশন ব্যবহার করুন। 
       </p>
 
       <!-- File Upload -->
@@ -119,24 +113,24 @@
                 <!-- Zoom and Rotate Controls -->
                 <div class="flex justify-center space-x-3">
                     <!-- Zoom In Button (Icon only) -->
-                    <button class="w-1/4 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-3 px-2 rounded-lg transition duration-300 shadow-md" id="zoomInBtn">
+                    <button class="w-1/4 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 shadow-md" id="zoomInBtn">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                         </svg>
                     </button>
                     <!-- Zoom Out Button (Icon only) -->
-                    <button class="w-1/4 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-3 px-2 rounded-lg transition duration-300 shadow-md" id="zoomOutBtn">
+                    <button class="w-1/4 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 shadow-md" id="zoomOutBtn">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
                         </svg>
                     </button>
-                    <!-- Rotate Right Button (EMOJI) -->
-                    <button class="w-1/4 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-3 px-2 rounded-lg transition duration-300 shadow-md" id="rotateBtn">
-                        <span class="control-emoji">🔄</span>
+                    <!-- Rotate Right Button (TEXT) -->
+                    <button class="w-1/4 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 shadow-md" id="rotateBtn">
+                        Rotate
                     </button>
-                    <!-- Recenter Button (EMOJI) -->
-                    <button class="w-1/4 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-3 px-2 rounded-lg transition duration-300 shadow-md" id="recenterBtn">
-                        <span class="control-emoji">🔁</span>
+                    <!-- Recenter Button (TEXT) -->
+                    <button class="w-1/4 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300 shadow-md" id="recenterBtn">
+                        Reset
                     </button>
                 </div>
                 
@@ -145,7 +139,7 @@
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  Crop & Download (.jpeg)
+                  DOWNLOAD NOW
                 </button>
             </div>
         </div>
