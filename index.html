@@ -5,143 +5,286 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SMART ICT Photo Resizer</title>
 
-  <!-- Bootstrap CSS via CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <!-- Google Font (optional) -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Cropper.js Library and CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            'gemini-green': '#10b981',
+            'gemini-dark': '#0f172a',
+            'gemini-blue': '#3b82f6',
+            'gemini-orange': '#f97316',
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f1f5f9; /* Slate 100 */
+    }
+    /* Style the image container to prevent overflow and ensure it's responsive */
+    #imageContainer {
+      width: 100%;
+      max-height: 60vh; /* Limit max height for better viewing */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      background-color: #e2e8f0;
+      border-radius: 0.5rem;
+    }
+    #imageToCrop {
+      display: block; /* Important for Cropper.js */
+      max-width: 100%;
+    }
+    /* Placeholder for the final 200x200 crop preview */
+    .passport-preview {
+        width: 150px;
+        height: 150px; /* Updated for 1:1 aspect ratio */
+        object-fit: cover;
+        border: 2px dashed #10b981;
+        margin: 0 auto;
+    }
+  </style>
 </head>
-<body style="font-family: 'Inter', sans-serif;">
+<body class="font-sans antialiased">
 
-  <div class="container py-5">
-    <div class="card shadow p-4 mx-auto" style="max-width: 600px;">
-      <h1 class="text-center text-success mb-4">SMART ICT Photo Resizer</h1>
+  <div class="container p-4">
+    <div class="bg-white shadow-2xl rounded-xl p-6 md:p-8 mx-auto w-full max-w-2xl">
+      
+      <!-- Updated Heading Structure -->
+      <h1 class="text-center text-5xl font-bold text-gemini-dark mb-1">
+        SMART ICT
+      </h1>
+      <h2 class="text-center text-xl font-semibold text-gemini-blue mb-4">
+        Student Profile Photo Maker
+      </h2>
+      <!-- End Updated Heading Structure -->
 
-      <div class="mb-3 text-center">
-        <label for="imageUpload" class="btn btn-success">
-          Upload Image
-          <input type="file" id="imageUpload" accept="image/*" hidden />
+      <p class="text-center text-gray-500 mb-6">
+        নিচের ক্রপ বক্সটি টেনে সেট করুন। ক্রপ বক্সটি একটি স্থির **বর্গাকার (১:১)** অনুপাতে (২০০x২০০ পিক্সেল ছবির জন্য) লক করা আছে।
+      </p>
+
+      <!-- File Upload -->
+      <div class="flex flex-col items-center space-y-4 mb-6">
+        <label for="imageUpload" class="cursor-pointer bg-gemini-green hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 shadow-md hover:shadow-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L6.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          Select Photo
+          <input type="file" id="imageUpload" accept="image/*" class="hidden" />
         </label>
       </div>
 
-      <div id="loadingSection" class="text-center mb-3 d-none">
-        <div class="spinner-border text-success" role="status"></div>
-        <p class="mt-2">Processing image...</p>
+      <!-- Error Section -->
+      <div id="errorSection" class="p-3 bg-red-100 text-red-700 rounded-lg hidden mb-6"></div>
+
+      <!-- Image Cropping Area -->
+      <div id="imageContainer" class="hidden">
+        <img id="imageToCrop" alt="Image to Crop" />
       </div>
 
-      <div id="errorSection" class="alert alert-danger d-none"></div>
+      <!-- Action and Preview Area -->
+      <div id="actionArea" class="mt-6 hidden">
+        <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 items-center justify-center">
+            
+            <div class="w-full md:w-1/3 text-center">
+                <h5 class="font-semibold text-gray-600 mb-2">Final Preview (200x200 Square)</h5>
+                <img id="finalPreview" class="passport-preview rounded-md mx-auto shadow-xl" alt="Final Cropped Passport Photo" />
+            </div>
 
-      <div class="row text-center mb-3">
-        <div id="originalContainer" class="col-md-6 d-none">
-          <h5>Original Image</h5>
-          <img id="originalImage" class="img-thumbnail" />
+            <div class="w-full md:w-2/3 text-center space-y-3">
+                <!-- Zoom Controls Only (Icon only) -->
+                <div class="flex justify-center space-x-3">
+                    <!-- Zoom In Button -->
+                    <button class="w-1/2 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-3 px-2 rounded-lg transition duration-300 shadow-md" id="zoomInBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
+                    </button>
+                    <!-- Zoom Out Button -->
+                    <button class="w-1/2 bg-gemini-orange hover:bg-orange-600 text-white font-semibold py-3 px-2 rounded-lg transition duration-300 shadow-md" id="zoomOutBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Crop and Download Button (English Only + Icon) -->
+                <button class="w-full max-w-xs bg-gemini-blue hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-300 shadow-md" id="cropAndDownloadBtn">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Crop & Download (.jpeg)
+                </button>
+            </div>
         </div>
-        <div id="resizedContainer" class="col-md-6 d-none">
-          <h5>Resized Image (200x200)</h5>
-          <img id="resizedImage" class="img-thumbnail" />
-        </div>
       </div>
-
-      <div class="text-center d-none" id="downloadSection">
-        <button class="btn btn-warning" id="downloadBtn">Download Resized Image</button>
-      </div>
-
-      <canvas id="hiddenCanvas" style="display: none;"></canvas>
-      <canvas id="resizedCanvas" style="display: none;"></canvas>
+      
+      <!-- Hidden Canvas for final processing -->
+      <canvas id="hiddenCanvas" width="200" height="200" class="hidden"></canvas>
     </div>
   </div>
 
-  <!-- JavaScript -->
   <script>
     const imageInput = document.getElementById('imageUpload');
-    const originalImage = document.getElementById('originalImage');
-    const resizedImage = document.getElementById('resizedImage');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const resizedCanvas = document.getElementById('resizedCanvas');
+    const imageToCrop = document.getElementById('imageToCrop');
+    const imageContainer = document.getElementById('imageContainer');
     const errorSection = document.getElementById('errorSection');
-    const loadingSection = document.getElementById('loadingSection');
-    const originalContainer = document.getElementById('originalContainer');
-    const resizedContainer = document.getElementById('resizedContainer');
-    const downloadSection = document.getElementById('downloadSection');
+    const actionArea = document.getElementById('actionArea');
+    const finalPreview = document.getElementById('finalPreview');
+    const hiddenCanvas = document.getElementById('hiddenCanvas');
+    const cropAndDownloadBtn = document.getElementById('cropAndDownloadBtn');
+    const zoomInBtn = document.getElementById('zoomInBtn');   
+    const zoomOutBtn = document.getElementById('zoomOutBtn'); 
 
+    let cropper = null;
+    const SQUARE_ASPECT_RATIO = 1; // 1:1 square
+    const TARGET_WIDTH = 200;
+    const TARGET_HEIGHT = 200;
+
+    /** Displays an error message in the dedicated section. */
+    function showError(msg) {
+      errorSection.textContent = msg;
+      errorSection.classList.remove('hidden');
+    }
+    
+    /** Clears errors and hides unnecessary elements */
+    function resetUI() {
+        errorSection.classList.add('hidden');
+        imageContainer.classList.add('hidden');
+        actionArea.classList.add('hidden');
+        finalPreview.src = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='; // Clear preview
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    }
+
+    /** Initializes Cropper.js on the loaded image */
+    function initializeCropper(imageElement) {
+        // Destroy any previous instance
+        if (cropper) {
+            cropper.destroy();
+        }
+
+        cropper = new Cropper(imageElement, {
+            aspectRatio: SQUARE_ASPECT_RATIO,
+            viewMode: 1, // Restrict the crop box to not exceed the canvas
+            autoCropArea: 0.8, // Start with 80% of the image size
+            movable: true,
+            rotatable: false,
+            scalable: true,
+            zoomable: true,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            // Update the preview whenever the crop box changes
+            crop(event) {
+                // Get the cropped canvas data URL
+                const croppedCanvas = cropper.getCroppedCanvas({
+                    width: TARGET_WIDTH,
+                    height: TARGET_HEIGHT,
+                    fillColor: '#fff',
+                });
+                finalPreview.src = croppedCanvas.toDataURL('image/jpeg');
+            },
+        });
+        
+        imageContainer.classList.remove('hidden');
+        actionArea.classList.remove('hidden');
+    }
+
+    // --- Event Listeners ---
+
+    // Handle file selection and image loading
     imageInput.addEventListener('change', (event) => {
       const file = event.target.files[0];
       if (!file) return;
 
-      errorSection.classList.add('d-none');
-      resizedContainer.classList.add('d-none');
-      originalContainer.classList.add('d-none');
-      downloadSection.classList.add('d-none');
-
       if (!file.type.startsWith('image/')) {
-        showError("Please upload an image file.");
-        return;
+        return showError("Please upload an image file.");
       }
 
-      loadingSection.classList.remove('d-none');
+      resetUI(); // Clear previous state
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        const imageData = e.target.result;
-        originalImage.src = imageData;
-        originalContainer.classList.remove('d-none');
-        processImage(imageData);
+          imageToCrop.src = e.target.result;
+          // Must wait for the image to load before initializing Cropper
+          imageToCrop.onload = () => {
+              initializeCropper(imageToCrop);
+          };
+          imageToCrop.onerror = () => showError("Failed to load the image.");
       };
-      reader.onerror = () => {
-        showError("Failed to read the image.");
-        loadingSection.classList.add('d-none');
-      };
+      reader.onerror = () => showError("Error reading the file.");
       reader.readAsDataURL(file);
     });
-
-    function processImage(imageDataUrl) {
-      const img = new Image();
-      img.onload = () => {
-        const targetSize = 200;
-        let newWidth, newHeight;
-
-        if (img.width > img.height) {
-          newWidth = targetSize;
-          newHeight = (img.height / img.width) * targetSize;
+    
+    // Handle zoom in button click (zoom by a positive factor)
+    zoomInBtn.addEventListener('click', () => {
+        if (cropper) {
+            // Zoom in by 10%
+            cropper.zoom(0.1); 
         } else {
-          newHeight = targetSize;
-          newWidth = (img.width / img.height) * targetSize;
+            showError("Please load an image before attempting to zoom.");
+        }
+    });
+    
+    // Handle zoom out button click (zoom by a negative factor)
+    zoomOutBtn.addEventListener('click', () => {
+        if (cropper) {
+            // Zoom out by 10%
+            cropper.zoom(-0.1); 
+        } else {
+            showError("Please load an image before attempting to zoom.");
+        }
+    });
+
+
+    // Handle crop and download button click
+    cropAndDownloadBtn.addEventListener('click', () => {
+        if (!cropper) {
+            return showError("Please select and crop an image first.");
         }
 
-        const ctx = resizedCanvas.getContext('2d');
-        resizedCanvas.width = targetSize;
-        resizedCanvas.height = targetSize;
-        ctx.clearRect(0, 0, targetSize, targetSize);
+        // Get the final cropped and scaled canvas
+        const croppedCanvas = cropper.getCroppedCanvas({
+            width: TARGET_WIDTH,
+            height: TARGET_HEIGHT,
+            fillColor: '#fff', // Ensure a white background if transparent pixels are cropped
+        });
 
-        const destX = (targetSize - newWidth) / 2;
-        const destY = (targetSize - newHeight) / 2;
-        ctx.drawImage(img, destX, destY, newWidth, newHeight);
-
-        const resizedDataUrl = resizedCanvas.toDataURL('image/jpeg', 0.8);
-        resizedImage.src = resizedDataUrl;
-        resizedContainer.classList.remove('d-none');
-        downloadSection.classList.remove('d-none');
-
-        loadingSection.classList.add('d-none');
-      };
-      img.onerror = () => {
-        showError("Failed to load the image.");
-        loadingSection.classList.add('d-none');
-      };
-      img.src = imageDataUrl;
-    }
-
-    function showError(msg) {
-      errorSection.textContent = msg;
-      errorSection.classList.remove('d-none');
-    }
-
-    downloadBtn.addEventListener('click', () => {
-      const link = document.createElement('a');
-      link.href = resizedImage.src;
-      link.download = 'smart_ict_resized.jpeg';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        // Convert canvas to a download link
+        croppedCanvas.toBlob((blob) => {
+            if (blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'smart_ict_200x200.jpeg'; // Updated filename
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url); // Clean up
+            } else {
+                showError("Error generating image blob for download.");
+            }
+        }, 'image/jpeg', 0.9); // Use JPEG format with quality 0.9
     });
   </script>
 </body>
